@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADK Agent Chat Interface</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Highlight.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-robot"></i> ADK Agents</h2>
+                <button class="btn-icon" id="toggleSidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <!-- Current Agent Info -->
+            <div class="agent-info">
+                <h3>{{ agent_info.name if agent_info and agent_info.loaded else 'Oracle Agent' }}</h3>
+                <p class="agent-description">{{ agent_info.description if agent_info and agent_info.loaded else 'AI-powered financial assistant' }}</p>
+                <div class="agent-details">
+                    <span class="badge">{{ agent_info.type if agent_info and agent_info.loaded else 'financial' }}</span>
+                    <span class="badge status-badge" id="connectionStatus">
+                        <i class="fas fa-circle"></i> Disconnected
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Agent Selector -->
+            {% if agent_info.available and agent_info.available|length > 1 %}
+            <div class="agent-selector">
+                <h4>Available Agents</h4>
+                <div class="agent-list">
+                    {% for agent in agent_info.available %}
+                    <div class="agent-item {% if agent.id == selected_agent %}active{% endif %}" 
+                         onclick="switchAgent('{{ agent.id }}')">
+                        <div class="agent-icon">
+                            <i class="fas {{ agent.icon }}"></i>
+                        </div>
+                        <div class="agent-details">
+                            <div class="agent-name">{{ agent.name }}</div>
+                            <div class="agent-desc">{{ agent.description[:50] }}...</div>
+                        </div>
+                        {% if agent.id == selected_agent %}
+                        <div class="agent-active">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="session-info">
+                <h4>Session</h4>
+                <p class="session-id">ID: {{ session_id[:8] }}...</p>
+                <button class="btn btn-secondary" id="clearSession">
+                    <i class="fas fa-trash"></i> Clear History
+                </button>
+            </div>
+            
+            <div class="capabilities">
+                <h4>Capabilities</h4>
+                <ul class="capability-list">
+                                    {% if agent_info and agent_info.loaded and agent_info.capabilities %}
+                    {% for capability in agent_info.capabilities %}
+                        <li><i class="fas fa-check-circle"></i> {{ capability }}</li>
+                        {% endfor %}
+                    {% else %}
+                    <li><i class="fas fa-check-circle"></i> Financial Analysis</li>
+                    <li><i class="fas fa-check-circle"></i> Future Predictions</li>
+                    <li><i class="fas fa-check-circle"></i> Scenario Modeling</li>
+                    <li><i class="fas fa-check-circle"></i> Timeline Analysis</li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-primary" id="newChat">
+                    <i class="fas fa-plus"></i> New Chat
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <button class="btn-icon mobile-menu" id="mobileMenu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="header-title">
+                    <h1>{{ agent_info.name if agent_info and agent_info.loaded else 'Oracle Financial Agent' }}</h1>
+                    <span class="agent-type-badge">
+                        <i class="fas fa-crystal-ball"></i>
+                        {{ agent_info.type.title() if agent_info and agent_info.loaded else 'Financial' }} Assistant
+                    </span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="btn-icon" id="downloadChat">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Welcome Message -->
+                    <div class="message assistant-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">{{ agent_info.name if agent_info and agent_info.loaded else 'Oracle Agent' }}</span>
+                                <span class="message-time"></span>
+                            </div>
+                            <div class="message-body">
+                                <p>👋 Welcome! I'm your {{ agent_info.name if agent_info and agent_info.loaded else 'Oracle Financial Agent' }}.</p>
+                                <p>{{ agent_info.description if agent_info and agent_info.loaded else 'I can help you with financial analysis and future predictions.' }}</p>
+                                {% if agent_info and agent_info.loaded and agent_info.capabilities %}
+                                <p>I can help you with:</p>
+                                <ul>
+                                    {% for capability in agent_info.capabilities %}
+                                    <li>{{ capability }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p>I can help you with:</p>
+                                <ul>
+                                    <li>📊 Comprehensive financial analysis</li>
+                                    <li>🔮 Future financial predictions</li>
+                                    <li>📈 Scenario modeling and planning</li>
+                                    <li>⏰ Timeline-based financial insights</li>
+                                </ul>
+                                {% endif %}
+                                <p>How can I assist you today?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="typing-content">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="typing-text">Agent is thinking...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="chat-input-container">
+                <div class="suggested-prompts" id="suggestedPrompts">
+                    {% if agent_info.current and agent_info.current.type == 'tax' %}
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('Analyze my tax situation for this year')">
+                        Analyze my tax situation
+                    </button>
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('What tax regime should I choose?')">
+                        Tax regime comparison
+                    </button>
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('Optimize my tax deductions')">
+                        Optimize deductions
+                    </button>
+                    {% else %}
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('What is my current financial health score?')">
+                        What is my financial health score?
+                    </button>
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('Show me my spending patterns')">
+                        Show my spending patterns
+                    </button>
+                    <button class="prompt-chip" onclick="sendSuggestedPrompt('Predict my financial future')">
+                        Predict my financial future
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div class="chat-input">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask me anything about {{ 'your taxes' if agent_info.current and agent_info.current.type == 'tax' else 'your finances' }}..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button class="btn-icon" id="attachFile" title="Attach file">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="btn-icon btn-send" id="sendButton" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="input-footer">
+                    <span class="char-count" id="charCount">0 / 4000</span>
+                    <span class="input-hint">Press Enter to send, Shift+Enter for new line</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Upload Modal -->
+    <div class="modal" id="fileModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upload File</h3>
+                <button class="btn-icon" onclick="closeFileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="file-drop-zone" id="fileDropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag and drop files here or click to browse</p>
+                    <input type="file" id="fileInput" style="display: none;" multiple>
+                </div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFileModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="uploadFiles()">Upload</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Switch Loading -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Switching agent...</p>
+        </div>
+    </div>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    
+    <script>
+        // Initialize session ID and current agent
+        const SESSION_ID = '{{ session_id }}';
+        const CURRENT_AGENT = '{{ selected_agent }}';
+        
+        // Initialize marked options
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+        
+        // Initialize the chat application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChat();
+        });
+    </script>
+</body>
+</html>

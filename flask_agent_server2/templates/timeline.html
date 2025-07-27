@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Financial Multiverse Timeline</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/timeline.css') }}">
+</head>
+<body>
+    <!-- Loading State -->
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Analyzing your financial multiverse...</div>
+        <button class="retry-button" onclick="triggerNewAnalysis()" style="margin-top: 2rem; display: none;" id="loadingRetryButton">
+            <i class="fas fa-play"></i> Start Analysis
+        </button>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-container" id="errorContainer" style="display: none;">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-message" id="errorMessage"></div>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <button class="retry-button" onclick="retryAnalysis()">
+                <i class="fas fa-redo"></i> Retry Analysis
+            </button>
+            <button class="retry-button" onclick="loadTestData()" style="background: var(--warning);">
+                <i class="fas fa-vial"></i> Load Test Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-container" id="mainContainer" style="display: none;">
+        <!-- Header -->
+        <div class="header">
+            <h1>Your Financial Multiverse</h1>
+            <p>Explore the paths you took and the ones you didn't</p>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="currentNetWorth">-</div>
+                    <div class="stat-label">Current Net Worth</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="bestAlternative">-</div>
+                    <div class="stat-label">Best Alternative Path</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="optimizationScore">-</div>
+                    <div class="stat-label">Optimization Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Container -->
+        <div class="timeline-container">
+            <div class="timeline-wrapper" id="timelineWrapper">
+                <div class="main-timeline"></div>
+                <!-- Timeline nodes will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Comparison Panel -->
+        <div class="comparison-panel" id="comparisonPanel">
+            <h3>Timeline Comparison</h3>
+            <div class="comparison-grid" id="comparisonGrid">
+                <!-- Comparison items will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-button" onclick="window.location.href='/'">
+                <i class="fas fa-home"></i> Back to Agents
+            </button>
+            <button class="nav-button" onclick="refreshAnalysis()">
+                <i class="fas fa-sync"></i> Refresh Analysis
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/timeline.js') }}"></script>
+    
+    <script>
+        // Initialize timeline when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTimeline();
+        });
+        
+        // Add keyboard shortcut for test data (Ctrl+Shift+T)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                console.log('Loading test data...');
+                loadTestData();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+# Flask and Web Framework
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+Flask-CORS==4.0.0
+Flask-Session==0.5.0
+
+# WebSocket Support
+python-socketio==5.10.0
+python-engineio==4.8.0
+eventlet==0.33.3  # For production WebSocket performance
+gevent==23.9.1    # Alternative to eventlet
+
+# ADK Dependencies
+google-adk-agents>=0.1.0
+google-adk-tools>=0.1.0
+google-auth>=2.23.0
+google-cloud-aiplatform>=1.36.0
+
+# Async Support
+asyncio==3.4.3
+aiohttp==3.9.1
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+pydantic>=2.0.0
+
+# Logging and Monitoring
+python-json-logger==2.0.7
+
+# Security
+cryptography>=41.0.0
+
+# Development Tools (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+
+# Production Server (optional)
+gunicorn==21.2.0
+waitress==2.1.2  # Windows-compatible alternative to gunicorn
+
+# Redis Support (optional, for production sessions)
+redis==5.0.1
+hiredis==2.2.3
+
+# Database Support (optional)
+SQLAlchemy==2.0.23
+alembic==1.12.1
+
+# Rate Limiting (optional)
+Flask-Limiter==3.5.0
+
+# Caching (optional)
+Flask-Caching==2.1.0 
